@@ -1,0 +1,330 @@
+{
+  "$schema": "https://raw.githubusercontent.com/t8y2/dbx/main/plugins/manifest.schema.json",
+  "contributions": [
+    {
+      "capabilities": [
+        "test",
+        "connect",
+        "disconnect"
+      ],
+      "database_type": "dbx-apollo",
+      "description": "Configure Portal access. Applications and environments are loaded after connecting.",
+      "fields": [
+        {
+          "binding": "name",
+          "default": "Apollo",
+          "key": "display_name",
+          "label": "Connection name",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "binding": "host",
+          "default": "localhost",
+          "key": "host",
+          "label": "Portal host",
+          "required": true,
+          "type": "text",
+          "description": "Apollo Portal address (the OpenAPI is served by Portal, not AdminService)"
+        },
+        {
+          "binding": "port",
+          "default": 8070,
+          "key": "port",
+          "label": "Portal port",
+          "required": true,
+          "type": "number"
+        },
+        {
+          "binding": "config",
+          "default": false,
+          "key": "tls",
+          "label": "Use HTTPS",
+          "type": "boolean"
+        },
+        {
+          "key": "server_version",
+          "label": "API compatibility",
+          "type": "select",
+          "binding": "config",
+          "default": "1.x",
+          "description": "Choose the server interface version explicitly.",
+          "options": [
+            {
+              "label": "1.x / 2.x",
+              "value": "1.x"
+            },
+            {
+              "label": "3.x",
+              "value": "3.x"
+            }
+          ]
+        },
+        {
+          "key": "portal_auth",
+          "label": "Login method",
+          "type": "select",
+          "binding": "config",
+          "placeholder": "Choose a login method",
+          "description": "Choose one method; only its credentials are used.",
+          "options": [
+            {
+              "label": "Token (Open Platform / User Access)",
+              "value": "none"
+            },
+            {
+              "label": "Username and password (native / LDAP)",
+              "value": "basic"
+            },
+            {
+              "label": "SSO Cookie",
+              "value": "cookie"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "binding": "secret",
+          "description": "Open Platform tokens or Apollo 3.x user access tokens; Bearer is added automatically for user tokens.",
+          "key": "token",
+          "label": "Token",
+          "type": "password",
+          "visible_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "none"
+            ]
+          },
+          "required_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "none"
+            ]
+          }
+        },
+        {
+          "binding": "config",
+          "key": "portal_username",
+          "label": "Username",
+          "type": "text",
+          "description": "An existing Portal user account.",
+          "visible_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "basic"
+            ]
+          },
+          "required_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "basic"
+            ]
+          }
+        },
+        {
+          "binding": "secret",
+          "key": "portal_password",
+          "label": "Password",
+          "type": "password",
+          "description": "Stored as a connection secret; never sent to the workbench.",
+          "visible_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "basic"
+            ]
+          },
+          "required_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "basic"
+            ]
+          }
+        },
+        {
+          "binding": "secret",
+          "key": "portal_cookie",
+          "label": "Login Cookie",
+          "type": "password",
+          "description": "Paste the full Cookie request-header value without the Cookie: prefix; update when expired.",
+          "visible_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "cookie"
+            ]
+          },
+          "required_when": {
+            "field": "portal_auth",
+            "one_of": [
+              "cookie"
+            ]
+          }
+        },
+        {
+          "key": "advanced",
+          "label": "More options",
+          "type": "boolean",
+          "binding": "config",
+          "default": false
+        },
+        {
+          "binding": "config",
+          "description": "Leave blank to use the Portal login account. With token-only access, enter an existing Apollo account before making changes.",
+          "key": "operator",
+          "label": "Change operator",
+          "type": "text",
+          "placeholder": "Existing Apollo account; optional for read-only use",
+          "visible_when": {
+            "field": "advanced",
+            "one_of": [
+              true
+            ]
+          }
+        },
+        {
+          "binding": "config",
+          "description": "Preselected when the workbench opens; can be switched inside",
+          "key": "app_id",
+          "label": "Default AppId",
+          "type": "text",
+          "visible_when": {
+            "field": "advanced",
+            "one_of": [
+              true
+            ]
+          }
+        },
+        {
+          "key": "context_path",
+          "label": "URL prefix",
+          "type": "text",
+          "binding": "config",
+          "default": "/",
+          "description": "Only for Portal deployments below a custom path, e.g. /apollo.",
+          "visible_when": {
+            "field": "advanced",
+            "one_of": [
+              true
+            ]
+          }
+        }
+      ],
+      "icon": "assets/plugin.svg",
+      "id": "io.dbx.apollo.connection",
+      "label": "Apollo Workbench connection",
+      "type": "connection-provider",
+      "workbench": "io.dbx.apollo.workbench"
+    },
+    {
+      "description": "Browse and manage Apollo configurations.",
+      "icon": "assets/plugin.svg",
+      "id": "io.dbx.apollo.workbench",
+      "label": "Apollo Config Workbench",
+      "type": "workbench"
+    }
+  ],
+  "description": "Manage Apollo apps, clusters, namespaces, configs, releases and gray releases",
+  "engines": {
+    "dbx": ">=0.6.47",
+    "host_api": "1"
+  },
+  "entrypoints": {
+    "backend": {
+      "executable": "bin/dbx-plugin-dbx-apollo"
+    },
+    "ui": {
+      "entry": "ui/index.html",
+      "root": "ui"
+    }
+  },
+  "icon": "assets/plugin.svg",
+  "id": "io.dbx.apollo",
+  "localizations": {
+    "zh-CN": {
+      "contributions": {
+        "io.dbx.apollo.connection": {
+          "description": "配置 Portal 访问方式；连接后自动读取应用、环境和集群。",
+          "fields": {
+            "app_id": {
+              "label": "默认应用",
+              "placeholder": "可选；连接后从应用列表选择",
+              "description": "只影响打开工作台时的初始选择。"
+            },
+            "display_name": {
+              "label": "连接名称"
+            },
+            "host": {
+              "label": "Portal 地址",
+              "placeholder": "apollo.example.com",
+              "description": "填写域名或 IP，不含协议和路径。"
+            },
+            "operator": {
+              "label": "变更操作人",
+              "placeholder": "已有 Apollo 账号，只读可不填",
+              "description": "用户访问 Token、账号密码或 Cookie 自动获取账号；开放平台 Token 写入前需填写。"
+            },
+            "port": {
+              "label": "端口"
+            },
+            "tls": {
+              "label": "HTTPS"
+            },
+            "token": {
+              "label": "Token",
+              "description": "支持开放平台 Token；3.x 也支持个人菜单中的「访问 Token」，直接粘贴即可。"
+            },
+            "server_version": {
+              "label": "接口兼容度",
+              "description": "按服务端选择；1.x、2.x 使用同一套旧版接口。"
+            },
+            "context_path": {
+              "label": "路径前缀",
+              "placeholder": "/",
+              "description": "仅自定义部署路径时填写，例如 /apollo。"
+            },
+            "portal_username": {
+              "label": "登录账号",
+              "placeholder": "Apollo Portal 用户账号",
+              "description": "使用该账号的应用和管理权限。"
+            },
+            "portal_password": {
+              "label": "登录密码",
+              "description": "仅保存到连接密钥。"
+            },
+            "portal_cookie": {
+              "label": "登录 Cookie",
+              "placeholder": "粘贴完整 Cookie 值",
+              "description": "不含 Cookie: 前缀；登录过期后需更新。"
+            },
+            "portal_auth": {
+              "label": "登录方式",
+              "placeholder": "选择登录方式",
+              "description": "三选一，仅使用所选方式的凭据。",
+              "options": {
+                "none": "Token（开放平台 / 用户访问）",
+                "basic": "账号密码（原生 / LDAP）",
+                "cookie": "SSO Cookie"
+              }
+            },
+            "advanced": {
+              "label": "更多选项"
+            }
+          },
+          "label": "Apollo 工作台连接"
+        },
+        "io.dbx.apollo.workbench": {
+          "description": "浏览并管理 Apollo 配置。",
+          "label": "Apollo 配置工作台"
+        }
+      },
+      "description": "管理 Apollo 应用、集群、命名空间、配置、发布和灰度",
+      "name": "Apollo 配置工作台"
+    }
+  },
+  "manifest_version": 1,
+  "name": "Apollo Config Workbench",
+  "publisher": "zzhao5726",
+  "permissions": [],
+  "version": "1.0.0",
+  "source": "https://github.com/zzhao5726/dbx-apollo",
+  "homepage": "https://github.com/zzhao5726/dbx-apollo"
+}

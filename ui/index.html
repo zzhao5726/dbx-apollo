@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apollo 配置工作台</title>
+<style>
+:root { color-scheme:light dark; --bg:#f4f6fa; --panel:#fff; --subtle:#f8fafc; --ink:#1d293d; --muted:#788499; --line:#e6ebf2; --accent:#3768eb; --accent-soft:#edf2ff; --danger:#d94c54; --danger-soft:#fff3f3; --shadow:0 16px 64px #172d501f; }
+* { box-sizing:border-box; }
+[hidden] { display:none!important; }
+body { margin:0; height:100dvh; display:flex; flex-direction:column; overflow:hidden; color:var(--ink); background:var(--bg); font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; line-height:1.55; }
+button,input,select,textarea { font:inherit; color:inherit; }
+button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; padding:6px 12px; border:1px solid var(--line); border-radius:8px; background:var(--panel); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
+button:hover:not(:disabled) { background:var(--subtle); border-color:#bdc9dd; }
+button.primary { color:#fff; background:var(--accent); border-color:var(--accent); box-shadow:0 2px 4px #3768eb1a; }
+button.primary:hover:not(:disabled) { background:#2855cc; border-color:#2855cc; }
+button.danger { color:var(--danger); background:var(--panel); border-color:color-mix(in srgb,var(--danger) 28%,var(--line)); }
+button.danger:hover:not(:disabled) { background:var(--danger-soft); border-color:var(--danger); }
+button:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; }
+input[type=text],select,textarea { min-height:36px; padding:8px 11px; border:1px solid var(--line); border-radius:8px; outline:none; background:var(--panel); color:var(--ink); transition:border-color .15s,box-shadow .15s; }
+input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent); }
+input[readonly] { color:var(--muted); background:var(--subtle); }
+input::placeholder,textarea::placeholder { color:var(--muted); opacity:.8; }
+input[type=checkbox] { accent-color:var(--accent); vertical-align:middle; }
+textarea { width:100%; min-height:140px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; line-height:1.7; }
+h1,h2,h3,p { margin:0; } h1 { font-size:16px; letter-spacing:.1px; } h2 { font-size:19px; font-weight:650; margin-bottom:20px; letter-spacing:-.3px; } h3 { font-size:13px; font-weight:650; }
+header,.toolbar,.row,.section-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#header { flex-shrink:0; gap:18px; min-height:76px; padding:14px 22px; border-bottom:1px solid var(--line); background:var(--panel); }
+.brand { display:flex; align-items:center; gap:10px; min-width:194px; }
+.brand-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:11px; color:#fff; background:linear-gradient(145deg,#5688fb,#3157d2); box-shadow:0 4px 12px #3768eb26; }
+.brand small { display:block; color:var(--muted); font-size:11px; line-height:1.3; letter-spacing:.6px; }
+.context-switches { display:flex; align-items:center; gap:12px; }
+.context-switches label { display:flex; flex-direction:column; gap:2px; font-size:10px; font-weight:600; color:var(--muted); letter-spacing:.5px; }
+.context-switches select { min-height:30px; padding:3px 26px 3px 0; border:0; border-radius:4px; background:var(--panel); font-size:13px; font-weight:600; color:var(--ink); max-width:220px; }
+.app-switch { min-width:0; }
+.context-label { display:block; color:var(--muted); font-size:10px; font-weight:600; letter-spacing:.5px; }
+#appSel { width:240px; min-height:30px; padding:3px 7px 3px 0; border:0; border-radius:4px; justify-content:space-between; font-weight:600; }
+#appCaption { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#appSel svg { flex-shrink:0; transition:transform .15s; }
+#appSel[aria-expanded=true] svg { transform:rotate(180deg); }
+.app-menu { position:fixed; z-index:30; padding:6px; border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:var(--shadow); }
+.app-search { display:flex; align-items:center; gap:8px; padding:5px 8px 10px; color:var(--muted); }
+.app-search svg { flex-shrink:0; }
+#appSearch { width:100%; min-width:0; min-height:32px; padding:5px 8px; background:var(--subtle); font-size:12px; }
+#appOptions { overflow:auto; overscroll-behavior:contain; position:relative; scrollbar-gutter:stable; }
+#appRows { position:relative; }
+.app-option { position:absolute; left:0; right:0; height:52px; display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:7px; cursor:pointer; }
+.app-option:hover,.app-option.active { background:var(--accent-soft); }
+.app-option[aria-selected=true] { color:var(--accent); }
+.app-option-text { flex:1; min-width:0; }
+.app-option strong,.app-option-text>span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.app-option strong { font-size:12px; font-weight:600; }
+.app-option-text>span { color:var(--muted); font-size:11px; }
+.app-empty { padding:16px 10px; color:var(--muted); font-size:12px; text-align:center; }
+.app-count { padding:8px 10px 3px; border-top:1px solid var(--line); color:var(--muted); font-size:10px; }
+.header-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.header-actions button { min-height:32px; padding:5px 10px; font-size:12px; }
+#layout { flex:1; min-height:0; display:grid; grid-template-columns:244px minmax(0,1fr); }
+#side { min-height:0; display:flex; flex-direction:column; border-right:1px solid var(--line); background:var(--subtle); }
+.side-scroll { padding:18px 14px; overflow:auto; flex:1; }
+.side-section+.side-section { margin-top:26px; }
+.section-title { justify-content:space-between; margin:0 5px 10px; }
+.section-title h3 { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; letter-spacing:.8px; }
+.count { display:inline-grid; place-items:center; min-width:18px; height:18px; padding:0 4px; border-radius:5px; font-size:10px; color:var(--muted); background:var(--line); letter-spacing:0; }
+.section-title button { min-height:25px; padding:2px 7px; font-size:11px; background:transparent; }
+#side .item { display:flex; align-items:center; gap:9px; margin:3px 0; padding:9px 11px; border:1px solid transparent; border-radius:8px; cursor:pointer; overflow-wrap:anywhere; transition:background .15s; }
+#side .item::before { flex-shrink:0; width:14px; color:var(--muted); text-align:center; }
+#clusters .item::before { content:"◇"; font-size:17px; line-height:16px; }
+#namespaces .item::before { content:"#"; font-family:ui-monospace,monospace; font-size:14px; }
+#side .item:hover { background:var(--line); }
+#side .item.sel { background:var(--accent-soft); color:var(--accent); border-color:color-mix(in srgb,var(--accent) 9%,transparent); font-weight:600; }
+#side .item.sel::before { color:var(--accent); }
+.side-tools { display:flex; gap:6px; margin:12px 4px 0; }
+.side-tools button { flex:1; padding:5px 6px; min-height:29px; font-size:11px; background:transparent; }
+.connection-card { flex-shrink:0; padding:14px 18px; border-top:1px solid var(--line); }
+.connection-card .connection-label { display:flex; gap:7px; align-items:center; color:var(--muted); font-size:10px; font-weight:600; margin-bottom:5px; }
+.connection-dot { width:6px; height:6px; border-radius:50%; background:#34a783; }
+#connInfo { display:block; font-size:10px; color:var(--muted); overflow-wrap:anywhere; line-height:1.7; }
+#main { min-width:0; min-height:0; padding:24px 28px; overflow:auto; }
+.workspace-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
+.eyebrow { color:var(--muted); font-size:10px; font-weight:600; letter-spacing:1px; margin-bottom:4px; }
+#workspaceTitle { font-size:22px; font-weight:650; letter-spacing:-.5px; }
+#cfgMeta { display:block; color:var(--muted); font-size:11px; margin-top:4px; overflow-wrap:anywhere; }
+#btnNamespace { font-size:12px; }
+.tabs { display:flex; gap:6px; padding:4px; margin-bottom:20px; width:fit-content; max-width:100%; overflow:auto; border:1px solid var(--line); border-radius:10px; background:color-mix(in srgb,var(--line) 50%,var(--bg)); }
+.tabs button { flex-shrink:0; min-height:30px; padding:5px 14px; border-color:transparent; background:transparent; border-radius:7px; color:var(--muted); font-size:12px; }
+.tabs button.sel { color:var(--ink); background:var(--panel); border-color:var(--line); box-shadow:0 1px 3px #1d293d09; font-weight:600; }
+#tab-cfg,#tab-diff,#tab-hist,#tab-instances { min-height:260px; border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:0 2px 5px #1d293d02; }
+#tab-cfg>.toolbar,#tab-diff>.toolbar,#tab-hist>.toolbar,#tab-instances>.toolbar { min-height:66px; padding:14px 18px; margin:0; border-bottom:1px solid var(--line); gap:8px; }
+#cfgSearch { margin-left:auto; width:210px; min-height:32px; font-size:12px; background:var(--subtle); }
+#cfgTable,#histTable,#instancesBody,#diffBody { overflow:auto; }
+#textContent { display:block; min-height:360px; width:calc(100% - 36px); margin:14px 18px; background:var(--subtle); }
+#cfgTable>p { margin:18px 18px 0; }
+#cfgTable>.toolbar { padding:0 18px 18px; margin:0; }
+#historyHint { padding:14px 18px 0; }
+#diffBody>p { padding:14px 18px; border-bottom:1px solid var(--line); }
+.toolbar { margin-bottom:12px; } .row { justify-content:flex-end; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th,td { text-align:left; vertical-align:top; padding:12px 18px; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+th { background:var(--subtle); color:var(--muted); font-size:10px; font-weight:600; letter-spacing:.5px; }
+tr:last-child td { border-bottom:0; } tbody tr:hover { background:var(--subtle); }
+td button { min-height:26px; padding:3px 8px; font-size:11px; }
+.key { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:500; }
+.val { max-width:440px; white-space:pre-wrap; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; line-height:1.7; }
+.muted { color:var(--muted); font-size:11px; }
+.empty { padding:58px 24px; text-align:center; color:var(--muted); font-size:12px; }
+.card { padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--panel); margin-bottom:16px; }
+.card h3 { margin-bottom:12px; }
+pre { white-space:pre-wrap; overflow-wrap:anywhere; font:11px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace; }
+#toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--panel); padding:11px 18px; border-radius:10px; display:none; z-index:60; max-width:90vw; box-shadow:var(--shadow); }
+.modal-bg { position:fixed; inset:0; display:none; place-items:center; z-index:40; padding:24px; background:#14203755; backdrop-filter:blur(4px); }
+.modal { width:min(720px,100%); max-height:90dvh; overflow:auto; padding:28px; border:1px solid var(--line); border-radius:16px; background:var(--panel); box-shadow:var(--shadow); animation:sheet-in .15s ease-out; }
+.modal label { display:block; margin:15px 0 6px; font-size:12px; font-weight:600; }
+.modal label:has(input[type=checkbox]) { font-weight:400; }
+.modal input[type=text],.modal select { width:100%; }
+.modal p { line-height:1.8; margin-bottom:10px; } .modal h3 { margin:18px 0 8px; }
+.modal .row { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); }
+.modal .toolbar { margin-top:10px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+.form-section { margin-top:20px; padding-top:4px; border-top:1px solid var(--line); }
+.form-section h3 { font-size:12px; margin:14px 0 2px; }
+.info-grid { display:grid; grid-template-columns:110px minmax(0,1fr); gap:12px 20px; margin:18px 0 24px; font-size:12px; }
+.info-grid dt { color:var(--muted); } .info-grid dd { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.user-filter { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:14px 0 0; } .user-filter h3 { margin:0; } .modal .user-filter input { width:210px; min-width:0; min-height:30px; font-size:11px; }
+.user-add { display:flex; gap:8px; } .user-add select { min-width:0; flex:1; } .user-add button { flex-shrink:0; }
+.picked-users { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.picked-users button { color:var(--accent); background:var(--accent-soft); border-color:transparent; padding:4px 9px; min-height:28px; font-size:11px; }
+#app-userHint { margin:7px 0; } #app-ownerSelect,#app-ownerEmail { font-size:12px; }
+#modalError { margin-top:16px; }
+#modalError>p { color:var(--danger); white-space:pre-wrap; overflow-wrap:anywhere; }
+#modalError summary { color:var(--muted); cursor:pointer; font-size:11px; }
+#modalError pre { padding:12px; max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:8px; background:var(--subtle); user-select:text; }
+.rule { padding:16px; margin-bottom:12px; border:1px solid var(--line); border-radius:9px; background:var(--subtle); }
+.rule input { display:block; width:100%; margin:5px 0 10px; }
+@keyframes sheet-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@media(prefers-color-scheme:dark) { :root { --bg:#151b26; --panel:#1d2533; --subtle:#19212e; --ink:#e3e9f3; --muted:#8a97ad; --line:#2c3748; --accent:#7b9cff; --accent-soft:#283653; --danger:#f08087; --danger-soft:#35262d; --shadow:0 18px 72px #0006; } button.primary { color:#13203d; } button.primary:hover:not(:disabled) { background:#9bb4ff; border-color:#9bb4ff; } }
+@media(max-width:1100px) { #header { gap:12px; padding:12px 16px; } .brand { min-width:160px; } .context-switches select { max-width:170px; } #appSel { width:190px; } #main { padding:20px; } #layout { grid-template-columns:220px minmax(0,1fr); } .header-actions { gap:5px; } .header-actions button { padding:5px 8px; } }
+@media(max-width:850px) { .brand { min-width:125px; } .brand small { display:none; } #header { flex-wrap:wrap; } .header-actions { width:100%; justify-content:flex-end; } #main { padding:18px 14px; } #layout { grid-template-columns:190px minmax(0,1fr); } #cfgSearch { width:160px; } .tabs button { padding:5px 10px; } }
+@media(max-width:600px) { #layout { grid-template-columns:154px minmax(0,1fr); } .side-scroll { padding:14px 7px; } .side-tools { flex-direction:column; } .section-title { gap:5px; } .section-title button { padding:2px 4px; } .connection-card { padding:12px; } .workspace-head { align-items:flex-start; flex-direction:column; gap:10px; } #workspaceTitle { font-size:19px; } #cfgSearch { margin-left:0; width:100%; } .modal-bg { padding:12px; } .modal { padding:20px; } .info-grid { grid-template-columns:90px minmax(0,1fr); gap:10px; } .form-grid { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<header id="header">
+<div class="brand"><span class="brand-mark"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 17L12 5L19 17H5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="5" r="2.5" fill="currentColor"/><circle cx="5" cy="17" r="2.5" fill="currentColor"/><circle cx="19" cy="17" r="2.5" fill="currentColor"/></svg></span><div><h1>Apollo</h1><small>配置工作台</small></div></div>
+<div class="context-switches">
+<div class="app-switch" id="appPicker"><span class="context-label">当前应用</span><button id="appSel" aria-label="应用" aria-haspopup="listbox" aria-expanded="false" aria-controls="appOptions" disabled><span id="appCaption">正在加载应用…</span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div class="app-menu" id="appMenu" hidden><div class="app-search"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input type="text" id="appSearch" role="combobox" aria-label="搜索应用" aria-autocomplete="list" aria-expanded="true" aria-controls="appOptions" placeholder="搜索 AppId 或应用名称" autocomplete="off"></div><div id="appOptions" role="listbox" aria-label="应用"><div id="appRows"></div></div><div class="app-count" id="appCount" role="status"></div></div></div>
+<label>环境<select id="envSel" aria-label="环境"></select></label></div>
+<div class="header-actions"><button id="btnAppNew">新建应用</button><button id="btnApp">应用信息</button><button id="btnPortal">登录信息</button><button id="btnRefresh">刷新</button></div>
+</header>
+<div id="layout">
+<aside id="side"><div class="side-scroll">
+<section class="side-section"><div class="section-title"><h3>集群 <span class="count" id="clusterCount">0</span></h3><span><button id="btnClusterNew">新建</button> <button id="btnCluster">管理</button></span></div><div id="clusters"></div></section>
+<section class="side-section"><div class="section-title"><h3>命名空间 <span class="count" id="namespaceCount">0</span></h3><button id="btnNamespaceNew">新建</button></div><div id="namespaces"></div><div class="side-tools"><button id="btnAttach">关联 / 补建</button><button id="btnRepair">补齐缺失</button></div></section>
+</div><div class="connection-card"><div class="connection-label"><span class="connection-dot"></span>当前连接</div><span id="connInfo"></span></div></aside>
+<main id="main">
+<div class="workspace-head"><div><p class="eyebrow">配置管理</p><div id="workspaceTitle">正在连接</div><span id="cfgMeta">正在加载工作台…</span></div><button id="btnNamespace">命名空间信息</button></div>
+<div class="tabs"><button data-tab="cfg" class="sel">配置</button><button data-tab="diff">待发布差异</button><button data-tab="hist">发布记录</button><button data-tab="gray">灰度发布</button><button data-tab="instances">使用实例</button></div>
+<div id="tab-cfg">
+<div class="toolbar"><button id="btnAdd">＋ 新增配置</button><button class="primary" id="btnPublish">发布配置</button><button id="btnImport">导入</button><button id="btnExport">导出</button><input type="text" id="cfgSearch" placeholder="搜索 Key、Value、备注" aria-label="搜索配置"></div>
+<div id="cfgTable"></div>
+</div>
+<div id="tab-diff" hidden><div class="toolbar"><button id="btnDiffReload">刷新差异</button><button id="btnDiffPublish">发布</button></div><div id="diffBody"></div></div>
+<div id="tab-hist" hidden><div class="toolbar"><button id="btnHistReload">刷新</button><button id="btnHistPrev">上一页</button><span id="histPage"></span><button id="btnHistNext">下一页</button><button id="btnRollback">回滚当前发布</button></div><p class="muted" id="historyHint"></p><div id="histTable"></div></div>
+<div id="tab-gray" hidden><div id="grayBody"></div></div>
+<div id="tab-instances" hidden><div class="toolbar"><input type="text" id="instanceApp" placeholder="客户端 AppId（精确匹配）" aria-label="客户端 AppId"><button id="btnInstances">查询</button><button id="btnInstPrev">上一页</button><span id="instPage"></span><button id="btnInstNext">下一页</button></div><div id="instancesBody"></div></div>
+</main>
+</div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalBox" role="dialog" aria-modal="true"></div></div>
+<div id="toast" role="status"></div>
+<script>
+const $ = s => document.querySelector(s);
+const S = {connectionId:null,env:'DEV',appId:'',cluster:'',namespace:'',operator:'',modern:false,portalConfigured:false,apps:[],envs:[],namespaces:[],data:null,branch:null,tab:'cfg',nav:0,view:0,histPage:0,instPage:0,latest:null,loading:true};
+let toastTimer;
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const scope = () => ({env:S.env,appId:S.appId,cluster:S.cluster,namespace:S.namespace});
+const canManageResources = () => S.modern||S.portalConfigured;
+const current = target => Object.entries(target).every(([key,value])=>S[key]===value);
+const active = ticket => ticket === S.view;
+const format = () => S.data?.format || S.namespaces.find(n=>n.namespaceName===S.namespace)?.format || 'properties';
+function toast(message){ $('#toast').textContent=message; $('#toast').style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>$('#toast').style.display='none',4500); }
+function errorData(e){ if(e instanceof Error) return {...e,name:e.name,message:e.message,stack:e.stack,...(e.cause?{cause:errorData(e.cause)}:{})}; return e; }
+function showError(e){
+ if($('#modalBg').style.display!=='grid'){
+  openModal('<h2>操作失败</h2><div class="row"><button id="mCancel">关闭</button></div>'); bind('#mCancel',closeModal);
+ }
+ let box=$('#modalError');
+ if(!box){ box=document.createElement('div'); box.id='modalError'; $('#modalBox').querySelector(':scope > .row').before(box); }
+ box.innerHTML=`<p role="alert">${esc(e?.message||'操作未完成，请查看错误详情。')}</p><details><summary>错误详情</summary><pre>${esc(JSON.stringify(errorData(e),null,2))}</pre></details>`;
+}
+function action(fn){ return async e=>{ const b=e?.currentTarget; $('#modalError')?.remove(); if(b?.tagName==='BUTTON') b.disabled=true; try{ await fn(e); }catch(err){ showError(err); }finally{ if(b?.isConnected) b.disabled=false; updateButtons(); } }; }
+function bind(sel,fn){ $(sel).onclick=action(fn); }
+async function call(method,params={}){ return window.dbxPlugin.invoke(method,{connectionId:S.connectionId,env:S.env,appId:S.appId,...params}); }
+function options(sel,list,value,label=x=>x){ sel.innerHTML=''; list.forEach(x=>{ const o=document.createElement('option'); o.value=typeof x==='string'?x:x.appId; o.textContent=label(x); sel.appendChild(o); }); if([...sel.options].some(o=>o.value===value)) sel.value=value; }
+const appPicker = {matches:[],focused:0,rowHeight:52,maxHeight:364};
+function updateAppCaption(){
+ const app=S.apps.find(a=>a.appId===S.appId),caption=app?app.appId+(app.name&&app.name!==app.appId?' · '+app.name:''):'暂无可访问应用';
+ $('#appCaption').textContent=caption; $('#appSel').title=caption;
+}
+function closeAppPicker(focus=false){
+ $('#appMenu').hidden=true; $('#appSel').setAttribute('aria-expanded','false'); $('#appSearch').removeAttribute('aria-activedescendant');
+ if(focus) $('#appSel').focus();
+}
+function positionAppMenu(){
+ const rect=$('#appSel').getBoundingClientRect(),width=Math.min(360,window.innerWidth-24),menu=$('#appMenu');
+ menu.style.width=width+'px'; menu.style.left=Math.max(12,Math.min(rect.left,window.innerWidth-width-12))+'px'; menu.style.top=rect.bottom+8+'px';
+ appPicker.maxHeight=Math.min(364,Math.max(52,window.innerHeight-rect.bottom-110));
+ $('#appOptions').style.height=Math.min(appPicker.maxHeight,Math.max(1,appPicker.matches.length)*appPicker.rowHeight)+'px';
+}
+function renderAppRows(reveal=false){
+ const list=$('#appOptions'),{matches,focused,rowHeight}=appPicker;
+ if(reveal){ const top=focused*rowHeight; if(top<list.scrollTop) list.scrollTop=top; else if(top+rowHeight>list.scrollTop+list.clientHeight) list.scrollTop=top+rowHeight-list.clientHeight; }
+ const start=Math.max(0,Math.floor(list.scrollTop/rowHeight)-3),end=Math.min(matches.length,Math.ceil((list.scrollTop+list.clientHeight)/rowHeight)+3);
+ $('#appRows').innerHTML=matches.length?matches.slice(start,end).map((app,i)=>{
+  const index=start+i;
+  return `<div id="app-option-${index}" class="app-option${index===focused?' active':''}" role="option" aria-selected="${app.appId===S.appId}" aria-posinset="${index+1}" aria-setsize="${matches.length}" data-app-index="${index}" style="top:${index*rowHeight}px" title="${esc(app.appId+' · '+(app.name||''))}"><div class="app-option-text"><strong>${esc(app.appId)}</strong><span>${esc(app.name||'')}</span></div>${app.appId===S.appId?'<span aria-hidden="true">✓</span>':''}</div>`;
+ }).join(''):'<div class="app-empty">没有匹配的应用</div>';
+ if(focused>=start&&focused<end) $('#appSearch').setAttribute('aria-activedescendant','app-option-'+focused); else $('#appSearch').removeAttribute('aria-activedescendant');
+}
+function filterApps(preferCurrent=false){
+ const query=$('#appSearch').value.trim().toLowerCase();
+ appPicker.matches=S.apps.filter(app=>[app.appId,app.name].some(value=>String(value||'').toLowerCase().includes(query)));
+ appPicker.focused=preferCurrent?Math.max(0,appPicker.matches.findIndex(app=>app.appId===S.appId)):0;
+ $('#appRows').style.height=Math.max(1,appPicker.matches.length)*appPicker.rowHeight+'px'; $('#appOptions').scrollTop=0;
+ $('#appCount').textContent=query?`${appPicker.matches.length} / ${S.apps.length} 个应用`:`共 ${S.apps.length} 个应用`;
+ positionAppMenu(); renderAppRows(true);
+}
+function openAppPicker(){
+ if($('#appSel').disabled) return;
+ $('#appMenu').hidden=false; $('#appSel').setAttribute('aria-expanded','true'); $('#appSearch').value=''; filterApps(true); $('#appSearch').focus();
+}
+async function selectApp(index){
+ const app=appPicker.matches[index]; if(!app) return;
+ closeAppPicker(true); if(app.appId===S.appId) return;
+ S.appId=app.appId; S.cluster=''; S.namespace=''; updateAppCaption(); await refreshNavigation();
+}
+function updateButtons(){
+ const modal=$('#modalBg').style.display==='grid', app=!!S.appId, ns=!!S.namespace&&!S.loading;
+ $('#side').inert=modal||S.loading; $('#main').inert=modal||S.loading; $('#header').querySelectorAll('button,select').forEach(b=>b.disabled=modal||S.loading);
+ $('#appSel').disabled=modal||!S.apps.length;
+ $('#btnAppNew').disabled=modal||!S.modern||S.loading; $('#btnAppNew').title=S.modern?'创建应用':'创建应用需要 Apollo 3.x'; $('#btnApp').disabled=modal||!app||S.loading;
+ ['btnClusterNew','btnNamespaceNew'].forEach(id=>$('#'+id).disabled=!app||S.loading);
+ $('#btnCluster').disabled=!S.cluster||S.loading;
+ $('#btnAttach').disabled=!canManageResources()||!S.cluster||S.loading; $('#btnAttach').title=canManageResources()?'':'请在连接中切换为账号密码或 SSO Cookie 登录';
+ $('#btnRepair').disabled=!S.modern||!S.cluster||S.loading; $('#btnRepair').title=S.modern?'':'此操作需要 Apollo 3.x；旧版可通过「关联 / 补建」逐个添加已有定义';
+ $('#btnPortal').textContent='登录信息';
+ ['btnNamespace','btnPublish','btnDiffPublish'].forEach(id=>$('#'+id).disabled=!ns);
+ ['btnAdd','btnImport','btnExport'].forEach(id=>$('#'+id).disabled=!ns||!S.data);
+ $('#btnAdd').hidden=format()!=='properties'; $('#cfgSearch').hidden=format()!=='properties';
+ $('#btnHistPrev').disabled=!S.modern||S.histPage===0; $('#btnInstPrev').disabled=!S.modern||S.instPage===0;
+ $('#btnRollback').disabled=!S.latest;
+}
+function openModal(html){ closeAppPicker(); $('#modalBox').innerHTML=html; $('#modalBg').style.display='grid'; updateButtons(); }
+function closeModal(){ $('#modalBg').style.display='none'; updateButtons(); }
+function form(title,html,save,label='保存'){
+ openModal(`<h2>${esc(title)}</h2>${html}<div class="row"><button id="mCancel">取消</button><button class="primary" id="mOk">${esc(label)}</button></div>`);
+ bind('#mCancel',closeModal); bind('#mOk',save);
+}
+function confirmAction(title,message,fn,word='确认'){
+ form(title,`<p>${message}</p><p class="muted">${esc(S.env)} / ${esc(S.appId)} / ${esc(S.cluster)} / ${esc(S.namespace)}</p>`,async()=>{ await fn(); closeModal(); toast('操作成功'); await refreshNavigation(); },word);
+}
+function infoRows(rows){ return '<dl class="info-grid">'+rows.filter(([,value])=>value!==undefined).map(([label,value])=>`<dt>${esc(label)}</dt><dd>${esc(value==null||value===''?'—':typeof value==='boolean'?(value?'是':'否'):value)}</dd>`).join('')+'</dl>'; }
+function formatTime(value){ if(value==null||value==='') return value; const match=String(value).match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?/); return match?`${match[1]} ${match[2]}:${match[3]||'00'}`:value; }
+function auditRows(value){ return [['创建人',value.dataChangeCreatedBy],['创建时间',formatTime(value.dataChangeCreatedTime)],['最后修改人',value.dataChangeLastModifiedBy],['最后修改时间',formatTime(value.dataChangeLastModifiedTime)]]; }
+function details(title,value,html=infoRows(Object.entries(value||{}))){ openModal(`<h2>${esc(title)}</h2>${html}<div class="row"><button id="mCancel">关闭</button></div>`); bind('#mCancel',closeModal); }
+function configTable(config){ const entries=Object.entries(config||{}); return entries.length?'<table><tr><th>配置项</th><th>值</th></tr>'+entries.map(([key,value])=>`<tr><td class="key">${esc(key)}</td><td class="val">${esc(value)}</td></tr>`).join('')+'</table>':'<p class="muted">暂无配置</p>'; }
+function releaseDetails(release){ details('发布配置',release,infoRows([['发布标题',release.name],['发布编号',release.id],['应用',release.appId],['集群',release.clusterName],['命名空间',release.namespaceName],['备注',release.comment],...auditRows(release)])+configTable(release.configurations)); }
+function resetView(){ S.data=null; S.branch=null; S.latest=null; S.histPage=0; S.instPage=0; S.view++; $('#workspaceTitle').textContent=S.namespace||'配置管理'; $('#cfgMeta').textContent=[S.env,S.appId,S.cluster,S.namespace].filter(Boolean).join(' / '); ['cfgTable','diffBody','histTable','grayBody','instancesBody'].forEach(id=>$('#'+id).innerHTML='<div class="empty">加载中…</div>'); updateButtons(); }
+async function init(){
+ await window.dbxPlugin.ready; S.connectionId=window.dbxPlugin.context?.connectionId;
+ if(!S.connectionId) throw new Error('未获取到连接 ID，请先在 DBX 中打开此连接');
+ const info=await call('apollo/connection.info'); S.env=info.env; S.operator=info.operator; S.modern=info.apiLevel==='modern'; S.portalConfigured=!!info.portalConfigured; S.authType=info.authType;
+ $('#connInfo').textContent=`${info.baseUrl}${info.basePath||''} · ${S.modern?'3.x':'1.x / 2.x'} · 操作人 ${S.operator||'未设置'}`;
+ if(S.modern) S.envs=await call('apollo/envs.list');
+ await loadApps(info.defaultAppId);
+}
+async function loadApps(preferred=S.appId){
+ S.apps=await call('apollo/apps.list')||[]; closeAppPicker(); S.appId=S.apps.some(app=>app.appId===preferred)?preferred:S.apps[0]?.appId||''; updateAppCaption();
+ await refreshNavigation();
+}
+async function refreshNavigation(){
+ const nav=++S.nav; S.loading=true; resetView(); $('#clusters').innerHTML=''; $('#namespaces').innerHTML=''; $('#clusterCount').textContent='0'; $('#namespaceCount').textContent='0';
+ try{
+  if(!S.appId){ S.cluster=''; S.namespace=''; options($('#envSel'),S.envs.length?S.envs:[S.env],S.env); $('#cfgTable').innerHTML='<div class="empty">没有可访问的应用，请检查当前身份的应用权限</div>'; return; }
+  const target=scope(), envclusters=await call('apollo/envclusters',target); if(nav!==S.nav) return;
+  const envs=[...new Set([...(S.envs||[]),...(envclusters||[]).map(x=>x.env)])];
+  if(!envs.length) envs.push(S.env); options($('#envSel'),envs,S.env); S.env=$('#envSel').value;
+  const names=(envclusters||[]).find(x=>x.env.toUpperCase()===S.env.toUpperCase())?.clusters||[]; $('#clusterCount').textContent=names.length;
+  if(!names.includes(S.cluster)) S.cluster=names.includes('default')?'default':names[0]||'';
+  names.forEach(name=>{ const d=document.createElement('div'); d.className='item'+(name===S.cluster?' sel':''); d.textContent=name; d.onclick=action(async()=>{ S.cluster=name; S.namespace=''; await refreshNavigation(); }); $('#clusters').appendChild(d); });
+  if(!S.cluster){ S.namespace=''; $('#cfgTable').innerHTML='<div class="empty">当前环境没有集群</div>'; return; }
+  const namespaces=await call('apollo/namespaces.list',scope()); if(nav!==S.nav) return;
+  S.namespaces=namespaces||[]; const nsNames=S.namespaces.map(n=>n.namespaceName);
+  if(!nsNames.includes(S.namespace)) S.namespace=nsNames.includes('application')?'application':nsNames[0]||'';
+  renderNamespaces(); S.loading=false; await loadActive();
+ }catch(err){ if(nav===S.nav) throw err; }finally{ if(nav===S.nav){ S.loading=false; updateButtons(); } }
+}
+function renderNamespaces(){
+ $('#namespaces').innerHTML=''; $('#namespaceCount').textContent=S.namespaces.length; S.namespaces.forEach(n=>{ const d=document.createElement('div'); d.className='item'+(n.namespaceName===S.namespace?' sel':''); d.textContent=n.namespaceName; d.title=`${n.format||'properties'}${n.isPublic?' · 公共':''}`;
+ d.onclick=action(async()=>{ S.nav++; S.namespace=n.namespaceName; resetView(); renderNamespaces(); await loadActive(); }); $('#namespaces').appendChild(d); });
+}
+async function loadActive(){
+ const ticket=++S.view,target=scope(); $('#workspaceTitle').textContent=S.namespace||'配置管理'; $('#cfgMeta').textContent=[S.env,S.appId,S.cluster,S.namespace].filter(Boolean).join(' / '); updateButtons();
+ if(!S.namespace){ ['cfgTable','diffBody','histTable','grayBody','instancesBody'].forEach(id=>$('#'+id).innerHTML='<div class="empty">请选择或创建命名空间</div>'); return; }
+ const loaders={cfg:loadItems,diff:loadDiff,hist:loadHistory,gray:loadGray,instances:loadInstances}; await loaders[S.tab](target,ticket);
+}
+async function loadItems(target,ticket){
+ const ns=await call('apollo/namespace.get',target); if(!active(ticket)) return; S.data=ns;
+ $('#cfgMeta').textContent=`${target.env} / ${target.appId} / ${target.cluster} / ${target.namespace} · ${ns.format||'properties'}${ns.isPublic?' · 公共':''}`;
+ renderItems(); updateButtons();
+}
+function renderItems(){
+ const ns=S.data; if(!ns) return; const items=ns.items||[];
+ if(format()!=='properties'){
+  $('#cfgTable').innerHTML=`<p class="muted">${esc(format())} 文本配置，保存后需发布生效。</p><textarea id="textContent" aria-label="配置内容">${esc(items.find(i=>i.key==='content')?.value||'')}</textarea><div class="toolbar"><button class="primary" id="btnTextSave">保存草稿</button></div>`;
+  bind('#btnTextSave',async()=>{ const target=scope(),value=$('#textContent').value; validateContent(value,format()); await call('apollo/item.update',{...target,key:'content',value,createIfNotExists:true}); toast('草稿已保存，发布后生效'); await loadActive(); }); return;
+ }
+ const q=$('#cfgSearch').value.toLowerCase(), filtered=items.filter(i=>[i.key,i.value,i.comment].some(v=>String(v||'').toLowerCase().includes(q)));
+ if(!filtered.length){ $('#cfgTable').innerHTML=`<div class="empty">${q?'没有匹配配置':'暂无配置，点击「新增配置」添加'}</div>`; return; }
+ $('#cfgTable').innerHTML='<table><thead><tr><th>Key</th><th>Value</th><th>备注</th><th>修改人 / 时间</th><th>操作</th></tr></thead><tbody>'+filtered.map((i,index)=>`<tr><td class="key">${esc(i.key)}</td><td class="val">${esc(i.value)}</td><td>${esc(i.comment)}</td><td class="muted">${esc(i.dataChangeLastModifiedBy)}<br>${esc(formatTime(i.dataChangeLastModifiedTime))}</td><td><button data-edit="${index}">编辑</button> <button class="danger" data-del="${index}">删除</button></td></tr>`).join('')+'</tbody></table>';
+ document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=action(()=>itemModal(filtered[+b.dataset.edit])));
+ document.querySelectorAll('[data-del]').forEach(b=>b.onclick=action(()=>deleteItem(filtered[+b.dataset.del].key)));
+}
+function validateContent(value,fmt){ if(fmt==='json'&&value.trim()) JSON.parse(value); if(fmt==='xml'&&value.trim()&&new DOMParser().parseFromString(value,'application/xml').querySelector('parsererror')) throw new Error('XML 格式无效'); }
+function validateItem(value,type){ if(type===1&&(!value.trim()||!Number.isFinite(Number(value)))) throw new Error('配置值必须为数字'); if(type===2&&!['true','false'].includes(value)) throw new Error('布尔配置值必须为 true 或 false'); if(type===3) JSON.parse(value); }
+function itemModal(item=null,gray=false){
+ const target={...scope(),cluster:gray?S.branch:S.cluster},text=format()!=='properties';
+ form(gray?'编辑灰度配置':item?'编辑配置':'新增配置',`<label>Key</label><input type="text" id="fKey" value="${esc(text?'content':item?.key||'')}" ${item||text?'readonly':''}>${S.modern&&!text?'<label>值类型</label><select id="fType">'+['字符串','数字','布尔','JSON'].map((name,i)=>`<option value="${i}" ${i===(item?.type??0)?'selected':''}>${name}</option>`).join('')+'</select>':''}<label>Value</label><textarea id="fVal">${esc(item?.value||'')}</textarea><label>备注</label><input type="text" id="fComment" value="${esc(item?.comment||'')}">`,async()=>{
+  const key=$('#fKey').value.trim(),value=$('#fVal').value; if(!key) throw new Error('Key 不能为空'); if(text) validateContent(value,format()); const type=$('#fType')?Number($('#fType').value):undefined; if(type!==undefined) validateItem(value,type);
+  await call(item?'apollo/item.update':'apollo/item.create',{...target,key,value,comment:$('#fComment').value,...(type!==undefined?{type}:{})}); closeModal(); toast('已保存草稿，发布后生效'); await loadActive();
+ });
+}
+function deleteItem(key,gray=false){ const target={...scope(),cluster:gray?S.branch:S.cluster}; confirmAction('删除配置',`删除 <b>${esc(key)}</b>？发布后生效。`,()=>call('apollo/item.delete',{...target,key}),'删除'); }
+async function appModal(isNew=false){
+ const target=scope(),app=isNew?{}:await call('apollo/app.get',target);
+ if(!current(target)) return;
+ if(!S.modern){ details('应用信息',app,infoRows([['AppId',app.appId],['应用名称',app.name],['部门',app.orgName],['部门编号',app.orgId],['负责人',app.ownerName],['负责人邮箱',app.ownerEmail],...auditRows(app)])); return; }
+ const organizations=await call('apollo/organizations.list',target); if(!current(target)) return;
+ let owner=app.ownerName?{userId:app.ownerName,email:app.ownerEmail}:null,users=[]; const admins=new Map();
+ form(isNew?'创建应用':'管理应用',`<div class="form-grid"><div><label for="app-appId">AppId *</label><input type="text" id="app-appId" value="${esc(app.appId||'')}" ${isNew?'':'readonly'} placeholder="例如 payment-service"></div><div><label for="app-name">应用名称 *</label><input type="text" id="app-name" value="${esc(app.name||'')}" placeholder="例如 支付服务"></div></div>
+<label for="app-org">所属部门 *</label><select id="app-org"><option value="">${organizations.length?'请选择 Apollo 已配置的部门':'Apollo 尚未配置部门'}</option>${organizations.map(org=>`<option value="${esc(org.orgId)}">${esc(org.orgName)}（${esc(org.orgId)}）</option>`).join('')}</select>
+<section class="form-section"><div class="user-filter"><h3>负责人${isNew?'与管理员':''}</h3><input type="text" id="app-userKeyword" aria-label="筛选 Apollo 用户" placeholder="按账号或姓名筛选（可选）"></div>
+<div class="form-grid"><div><label for="app-ownerSelect">负责人 *</label><select id="app-ownerSelect" disabled><option value="">正在加载用户…</option></select></div><div><label for="app-ownerEmail">负责人邮箱</label><input type="text" id="app-ownerEmail" value="${esc(owner?.email||'')}" readonly placeholder="选择后自动带出"></div></div>
+${isNew?'<label for="app-adminSelect">额外管理员</label><div class="user-add"><select id="app-adminSelect" disabled><option value="">正在加载用户…</option></select><button id="app-addAdmin" disabled>添加</button></div><div class="picked-users" id="app-admins"><span class="muted">未添加</span></div>':''}<p class="muted" id="app-userHint" role="status"></p><button id="app-retryUsers" hidden>重新加载用户</button></section>
+${isNew?'<section class="form-section"><label><input type="checkbox" id="app-assign" checked> 为当前身份分配应用权限</label><p class="muted">使用第三方 Token 时，可能仍需在 Portal 为新应用授权。</p></section>':'<section class="form-section"><p class="muted">删除应用会影响全部环境和配置。</p><button class="danger" id="btnAppDelete">删除整个应用</button></section>'}`,async()=>{
+  const org=organizations.find(x=>x.orgId===$('#app-org').value),appId=$('#app-appId').value.trim(),name=$('#app-name').value.trim();
+  if(!appId||!name) throw new Error('AppId 和应用名称不能为空'); if(!org) throw new Error('请选择 Apollo 已配置的部门'); if(!owner) throw new Error('请从 Apollo 用户中选择负责人');
+  const payload={appId,name,orgId:org.orgId,orgName:org.orgName,ownerName:owner.userId,ownerEmail:owner.email||''};
+  await call(isNew?'apollo/app.create':'apollo/app.update',{...target,app:payload,...(isNew?{admins:[...admins.keys()],assignAppRoleToSelf:$('#app-assign').checked}:{})}); closeModal(); toast('应用已保存'); await loadApps(payload.appId);
+ },isNew?'创建':'保存');
+ $('#app-org').value=app.orgId||'';
+ const keywordInput=$('#app-userKeyword'),ownerSelect=$('#app-ownerSelect'),adminSelect=$('#app-adminSelect'),hint=$('#app-userHint'),retry=$('#app-retryUsers');
+ let userRequest=0,filterTimer;
+ const userOptions=list=>list.map(u=>`<option value="${esc(u.userId)}">${esc(u.name&&u.name!==u.userId?`${u.name}（${u.userId}）`:u.userId)}</option>`).join('');
+ function userButtons(){ if(isNew) $('#app-addAdmin').disabled=adminSelect.disabled||!users.some(u=>u.userId===adminSelect.value); }
+ async function loadUsers(){
+  if(!keywordInput.isConnected) return;
+  const ticket=++userRequest,keyword=keywordInput.value.trim(); ownerSelect.disabled=true; if(isNew) adminSelect.disabled=true; userButtons(); hint.textContent='正在加载用户…'; retry.hidden=true;
+  try{
+   const found=await call('apollo/users.search',{keyword}); if(!keywordInput.isConnected||ticket!==userRequest) return;
+   users=found; const choices=owner&&!users.some(u=>u.userId===owner.userId)?[owner,...users]:users;
+   ownerSelect.innerHTML='<option value="">请选择负责人</option>'+userOptions(choices); ownerSelect.value=owner?.userId||''; ownerSelect.disabled=false;
+   if(isNew){ adminSelect.innerHTML='<option value="">请选择管理员</option>'+userOptions(users); adminSelect.disabled=false; }
+   hint.textContent=!users.length?'暂无匹配用户，可输入账号或姓名筛选。':users.length>=20?'未找到所需用户？可按账号或姓名筛选。':''; userButtons();
+   $('#modalError')?.remove();
+  }catch(e){ if(keywordInput.isConnected&&ticket===userRequest){ hint.textContent='用户加载失败'; retry.hidden=false; showError(e); } }
+ }
+ keywordInput.oninput=()=>{ clearTimeout(filterTimer); userRequest++; ownerSelect.disabled=true; if(isNew) adminSelect.disabled=true; userButtons(); filterTimer=setTimeout(loadUsers,250); };
+ ownerSelect.onchange=()=>{ owner=users.find(u=>u.userId===ownerSelect.value)||(owner?.userId===ownerSelect.value?owner:null); $('#app-ownerEmail').value=owner?.email||''; };
+ retry.onclick=loadUsers;
+ if(isNew){
+  function renderAdmins(){ $('#app-admins').innerHTML=admins.size?[...admins.values()].map(u=>`<button data-admin="${esc(u.userId)}" title="移除此管理员">${esc(u.name||u.userId)}（${esc(u.userId)}） ×</button>`).join(''):'<span class="muted">未添加</span>'; document.querySelectorAll('[data-admin]').forEach(b=>b.onclick=()=>{ admins.delete(b.dataset.admin); renderAdmins(); }); }
+  adminSelect.onchange=userButtons;
+  bind('#app-addAdmin',()=>{ const user=users.find(u=>u.userId===adminSelect.value); if(!user) throw new Error('请先选择用户'); admins.set(user.userId,user); renderAdmins(); });
+ }
+ if(!isNew) bind('#btnAppDelete',()=>typedDelete('删除应用',target.appId,'会删除应用及其全部环境、集群和配置。'+(S.portalConfigured?'需要当前账号具备超级管理员权限。':S.authType==='USER_TOKEN'?'需要 Token 所属账号是超级管理员，且范围包含 system:admin 并允许此应用。':'开放平台 Token 不支持；请使用超级管理员的用户访问 Token、账号密码或 Cookie 登录。'),async()=>{ await call('apollo/app.delete',target); await loadApps(); }));
+ await loadUsers();
+}
+function typedDelete(title,name,message,fn){
+ form(title,`<p>${esc(message)}</p><p>输入 <b>${esc(name)}</b> 确认：</p><input type="text" id="fConfirm">`,async()=>{ if($('#fConfirm').value!==name) throw new Error('输入内容与名称不一致'); await fn(); closeModal(); toast('已删除'); await refreshNavigation(); },'删除'); $('#mOk').className='danger';
+}
+function clusterNew(){
+ const target=scope(); form('创建集群',`<p class="muted">${esc(target.env)} / ${esc(target.appId)}。集群创建后会由 Apollo 初始化命名空间。</p><label>集群名称 *</label><input type="text" id="fName">`,async()=>{ const name=$('#fName').value.trim(); if(!name) throw new Error('集群名称不能为空'); await call('apollo/cluster.create',{...target,name}); S.cluster=name; S.namespace=''; closeModal(); toast('集群已创建'); await refreshNavigation(); },'创建');
+}
+async function clusterModal(){
+ const target=scope(),cluster=await call('apollo/cluster.get',target); if(!current(target)) return;
+ details('集群信息',cluster,infoRows([['集群名称',cluster.name],['所属应用',cluster.appId],['环境',target.env],['集群类型',target.cluster==='default'?'默认集群':cluster.parentClusterId>0?'灰度分支':'普通集群'],...auditRows(cluster)])+(canManageResources()&&target.cluster!=='default'?'<button class="danger" id="btnClusterDelete">删除此集群</button>':''));
+ if($('#btnClusterDelete')) bind('#btnClusterDelete',()=>typedDelete('删除集群',target.cluster,'会删除此环境集群及其配置和发布记录。',()=>call('apollo/cluster.delete',target)));
+}
+function namespaceNew(){
+ const target=scope(); form('创建命名空间',`<label>名称 *</label><input type="text" id="fName" placeholder="例如 datasource"><label>格式</label><select id="fFormat">${['properties','yaml','yml','json','xml','txt'].map(f=>`<option>${f}</option>`).join('')}</select><label><input type="checkbox" id="fPublic"> 公共命名空间</label><label><input type="checkbox" id="fPrefix" checked> 公共名称添加部门前缀</label><label>说明</label><input type="text" id="fComment"><p class="muted">创建应用级定义，由 Apollo 同步到各环境的 default 集群。文件扩展名自动补齐。${canManageResources()?'同时添加到当前集群。':'在连接中配置 Portal 登录后，可在此将定义关联到其他集群。'}</p>`,async()=>{
+  const name=$('#fName').value.trim(); if(!name) throw new Error('名称不能为空');
+  const result=await call('apollo/namespace.create',{...target,name,format:$('#fFormat').value,isPublic:$('#fPublic').checked,appendNamespacePrefix:$('#fPrefix').checked,comment:$('#fComment').value});
+  closeModal(); toast('命名空间定义已创建'); const actual=result.name;
+  if(canManageResources()){
+   try{ const list=await call('apollo/namespaces.list',target); if(!list.some(n=>n.namespaceName===actual)) await call('apollo/namespace.attach',{...target,namespace:actual}); }
+   catch(e){ S.namespace=actual; await refreshNavigation(); throw new Error('命名空间定义已创建，当前集群尚未添加；可使用「关联 / 补建」重试。',{cause:e}); }
+  }else S.cluster='default';
+  S.namespace=actual; await refreshNavigation();
+ },'创建');
+}
+async function attachModal(){
+ const target=scope(),list=await call('apollo/appnamespaces.list',{...target,all:true}),existing=new Set(S.namespaces.map(n=>n.namespaceName));
+ if(!current(target)) return;
+ const available=list.filter(n=>(n.appId===target.appId||n.isPublic)&&!existing.has(n.name));
+ form('关联 / 补建命名空间',`<p class="muted">将已有的应用定义或公共命名空间添加到当前环境和集群。${S.modern?'':'旧版候选来自公共定义和当前环境 default 集群；其他已有定义可输入完整名称。操作使用 Portal 登录账号权限。'}</p><label>命名空间完整名称 *</label><input type="text" id="fNamespace" list="namespaceOptions" placeholder="例如 TEST.common 或 datasource.yaml"><datalist id="namespaceOptions">${available.map(n=>`<option value="${esc(n.name)}">${esc(n.appId)}${n.isPublic?'（公共）':''}</option>`).join('')}</datalist>`,async()=>{ const name=$('#fNamespace').value.trim(); if(!name) throw new Error('命名空间名称不能为空'); if(existing.has(name)) throw new Error('当前集群已存在此命名空间'); await call('apollo/namespace.attach',{...target,namespace:name}); S.namespace=name; closeModal(); toast('命名空间已添加'); await refreshNavigation(); },'添加');
+}
+async function repairNamespaces(){ const target=scope(),names=await call('apollo/namespaces.missing',target); if(!current(target)) return; if(!names.length){ toast('当前集群没有缺失的命名空间'); return; } confirmAction('补齐缺失命名空间',`将在当前集群创建以下命名空间：<ul>${names.map(name=>`<li>${esc(name)}</li>`).join('')}</ul>`,()=>call('apollo/namespaces.repair',target),'补齐'); }
+async function namespaceModal(){
+ const target=scope(),[ns,lock]=await Promise.all([call('apollo/namespace.get',target),call('apollo/namespace.lock',target)]);
+ if(!current(target)) return;
+ details('命名空间信息',{...ns,lock},infoRows([['命名空间',ns.namespaceName],['所属应用',ns.appId],['环境 / 集群',`${target.env} / ${target.cluster}`],['配置格式',ns.format],['可见范围',ns.isPublic===true?'公共':ns.isPublic===false?'私有':'未知'],['说明',ns.comment],['编辑状态',lock?.isLocked===true?'已锁定'+(lock.lockedBy?'，持有人：'+lock.lockedBy:''):lock?.isLocked===false?'未锁定':'未返回锁信息'],['允许紧急发布',lock?.isEmergencyPublishAllowed],...auditRows(ns)])+`${canManageResources()&&target.namespace!=='application'?'<div class="toolbar"><button class="danger" id="btnNamespaceDelete">删除当前集群实例</button><button class="danger" id="btnDefinitionDelete">删除应用级定义</button></div>':''}`);
+ if($('#btnNamespaceDelete')) bind('#btnNamespaceDelete',()=>typedDelete('删除命名空间',target.namespace,'删除当前环境、集群下的此命名空间、配置及发布记录。',()=>call('apollo/namespace.delete',target)));
+ if($('#btnDefinitionDelete')) bind('#btnDefinitionDelete',()=>typedDelete('删除应用级定义',target.namespace,'删除应用级定义及各环境下的命名空间，公共定义可能被其他应用引用。旧版需要 Portal 超级管理员权限，服务端跨环境清理由事件处理。',()=>call('apollo/appnamespace.delete',target)));
+}
+async function portalAccount(){
+ const user=await call('apollo/auth.info');
+ if(S.authType==='CONSUMER'){ details('登录信息',user,infoRows([['登录方式','开放平台 Token'],['变更操作人',S.operator]])); return; }
+ if(S.authType!=='USER_TOKEN'){ details('登录信息',user,infoRows([['登录方式','Portal 用户'],['账号',user.userId],['姓名',user.name],['邮箱',user.email]])); return; }
+ const operations={'config:read':'读取配置','config:modify':'修改配置','config:release':'发布配置','namespace:create':'创建命名空间','namespace:delete':'删除命名空间','cluster:create':'创建集群','app:manage-role':'管理应用权限','app:create':'创建应用','user:manage':'管理用户','system:admin':'系统管理'};
+ const namespaceRows=(user.namespaces||[]).map(n=>`<tr>${[n.appId,n.env,n.clusterName,n.namespaceName].map(v=>`<td>${esc(v||'*')}</td>`).join('')}</tr>`).join('');
+ details('登录信息',user,infoRows([['登录方式','用户访问 Token'],['所属账号',user.userId],['Token 名称',user.tokenName],['过期时间',formatTime(user.expires)],['限流',user.rateLimit===0?'不限流':user.rateLimit==null?'—':`${user.rateLimit} 次 / 秒`],['操作范围',user.denyAll?'禁止全部操作':user.allOperations?'全部操作':(user.operations||[]).map(v=>operations[v]||v).join('、')||'无'],['应用范围',user.allApps?'全部应用':(user.appIds||[]).join('、')||'无'],['环境范围',user.allEnvs?'全部环境':(user.envs||[]).join('、')||'无'],['命名空间范围',user.allNamespaces?'全部命名空间':namespaceRows?'见下表':'无']])+(!user.allNamespaces&&namespaceRows?`<table><tr><th>应用</th><th>环境</th><th>集群</th><th>命名空间</th></tr>${namespaceRows}</table>`:'')+'<p class="muted">实际操作还需所属账号具备相应权限。</p>');
+}
+async function exportConfig(){
+ const target=scope(),ns=await call('apollo/namespace.get',target),properties=(ns.format||'properties')==='properties';
+ const filename=[target.appId,target.env,target.cluster,target.namespace].join('-').replace(/[\\/:*?"<>|]/g,'_')+(properties?'.json':'');
+ const text=properties?JSON.stringify({...target,format:ns.format||'properties',items:ns.items||[]},null,2):(ns.items||[]).find(i=>i.key==='content')?.value||'';
+ const saved=await window.dbxPlugin.saveFile({fileName:filename,contentType:properties?'application/json':'text/plain;charset=utf-8'},new TextEncoder().encode(text).buffer);
+ if(saved) toast('已保存到 '+saved.path);
+}
+function parseImport(text,fmt){
+ if(fmt!=='properties'){ validateContent(text,fmt); return [{key:'content',value:text,comment:''}]; }
+ const value=JSON.parse(text); if(!value||typeof value!=='object') throw new Error('配置 JSON 必须是对象或配置项数组');
+ const items=Array.isArray(value)?value:Array.isArray(value.items)?value.items:Object.entries(value).map(([key,v])=>({key,value:v}));
+ const keys=new Set(); for(const item of items){ if(typeof item.key!=='string'||!item.key.trim()||typeof item.value!=='string'||(item.comment!=null&&typeof item.comment!=='string')) throw new Error('每项需包含非空字符串 key、字符串 value，comment 可选'); if(keys.has(item.key)) throw new Error('导入文件存在重复 Key：'+item.key); if(item.type!=null){ if(!Number.isInteger(item.type)||item.type<0||item.type>3) throw new Error('配置类型必须为 0、1、2 或 3'); validateItem(item.value,item.type); } keys.add(item.key); }
+ return items;
+}
+function importModal(){
+ const target=scope(),fmt=format(); form('导入配置',`<p class="muted">${fmt==='properties'?'支持导出的 JSON、配置项数组、或 Key → 字符串 Value 的 JSON 对象。':'直接粘贴或选择 '+esc(fmt)+' 文本。'}仅保存草稿，不删除其他配置。</p><input type="file" id="fFile"><label>导入内容</label><textarea id="fImport"></textarea><label><input type="checkbox" id="fOverwrite"> 覆盖已有同名配置（默认跳过）</label><button id="btnPreview">预览变更</button><div id="importPreview"></div><p id="importProgress" class="muted"></p>`,async()=>{
+  const incoming=parseImport($('#fImport').value,fmt),ns=await call('apollo/namespace.get',target),existing=new Map((ns.items||[]).map(i=>[i.key,i])),overwrite=$('#fOverwrite').checked; let saved=0,skipped=0;
+  $('#mCancel').disabled=true;
+  try{
+   for(const item of incoming){ const old=existing.get(item.key); if(old&&(!overwrite||(old.value===item.value&&(old.comment||'')===(item.comment||'')&&(item.type==null||item.type===old.type)))){ skipped++; continue; }
+    await call(old?'apollo/item.update':'apollo/item.create',{...target,key:item.key,value:item.value,comment:item.comment||'',...(S.modern&&fmt==='properties'?{type:item.type??old?.type??0}:{})}); saved++; $('#importProgress').textContent=`已保存 ${saved} 项，跳过 ${skipped} 项`;
+   }
+  }catch(e){ $('#importProgress').textContent=`已保存 ${saved} 项，跳过 ${skipped} 项；后续未执行，可重试。`; throw e; }
+  finally{ $('#mCancel').disabled=false; }
+  closeModal(); toast(`已保存 ${saved} 项，跳过 ${skipped} 项；发布后生效`); await loadActive();
+ },'导入草稿');
+ $('#fFile').onchange=action(async()=>{ if($('#fFile').files[0]) $('#fImport').value=await $('#fFile').files[0].text(); });
+ bind('#btnPreview',async()=>{ const items=parseImport($('#fImport').value,fmt),ns=await call('apollo/namespace.get',target),keys=new Set((ns.items||[]).map(i=>i.key)); $('#importPreview').innerHTML='<table><tr><th>Key</th><th>处理</th><th>新值</th></tr>'+items.map(i=>`<tr><td>${esc(i.key)}</td><td>${keys.has(i.key)?($('#fOverwrite').checked?'覆盖':'跳过'):'新增'}</td><td class="val">${esc(i.value)}</td></tr>`).join('')+'</table>'; });
+}
+function configurations(release){ return release?.configurations||{}; }
+async function loadDiff(target,ticket){
+ const [ns,latest]=await Promise.all([call('apollo/namespace.get',target),call('apollo/release.latest',target)]); if(!active(ticket)) return; S.data=ns;
+ const old=configurations(latest),now=Object.fromEntries((ns.items||[]).filter(i=>i.key).map(i=>[i.key,i.value])),keys=[...new Set([...Object.keys(old),...Object.keys(now)])];
+ const changed=keys.filter(k=>!Object.hasOwn(old,k)||!Object.hasOwn(now,k)||old[k]!==now[k]);
+ $('#diffBody').innerHTML=`<p class="muted">${latest?'对比当前生效发布 #'+esc(latest.id):'当前没有生效发布'} · ${changed.length} 项变更</p>`+(changed.length?'<table><tr><th>Key / 类型</th><th>当前生效值</th><th>草稿值</th></tr>'+changed.map(k=>`<tr><td class="key">${esc(k)}<br><span class="muted">${!Object.hasOwn(old,k)?'新增':!Object.hasOwn(now,k)?'删除':'修改'}</span></td><td class="val">${esc(old[k])}</td><td class="val">${esc(now[k])}</td></tr>`).join('')+'</table>':'<div class="empty">没有待发布的配置变更</div>'); updateButtons();
+}
+function publishModal(gray=false,merge=false){
+ const target=scope(),branch=S.branch; form(merge?'合并并全量发布':gray?'灰度发布':'发布配置',`<p class="muted">${esc(target.env)} / ${esc(target.appId)} / ${esc(target.cluster)} / ${esc(target.namespace)}</p><label>发布标题（留空自动生成）</label><input type="text" id="fTitle" maxlength="64"><label>发布备注</label><textarea id="fComment"></textarea><label><input type="checkbox" id="fEmergency"> 紧急发布</label>${merge?'<label><input type="checkbox" id="fDeleteBranch" checked> 合并后删除灰度分支</label>':''}`,async()=>{
+  const method=merge?'apollo/branch.merge':gray?'apollo/branch.release':'apollo/release.publish';
+  await call(method,{...target,branch,title:$('#fTitle').value.trim(),comment:$('#fComment').value,isEmergencyPublish:$('#fEmergency').checked,...(merge?{deleteBranch:$('#fDeleteBranch').checked}:{})}); closeModal(); toast('发布成功'); await loadActive();
+ },merge?'合并发布':'发布');
+}
+async function loadHistory(target,ticket){
+ const [latest,res]=await Promise.all([call('apollo/release.latest',target),S.modern?call('apollo/releases.history',{...target,page:S.histPage,size:20}):Promise.resolve([])]); if(!active(ticket)) return; S.latest=latest;
+ const list=S.modern?(Array.isArray(res)?res:res?.content||[]):latest?[latest]:[];
+ $('#historyHint').textContent=S.modern?'回滚会切换客户端生效版本，草稿配置仍需单独确认。':'Apollo 1.x / 2.x 提供当前生效版本和回滚上一次发布；完整历史请在 Portal 查看。';
+ $('#histPage').textContent=S.modern?`第 ${S.histPage+1} 页`:'当前版本'; $('#btnHistNext').disabled=!S.modern||list.length<20;
+ $('#histTable').innerHTML=list.length?'<table><tr><th>ID / 标题</th><th>备注</th><th>发布人 / 时间</th><th>操作</th></tr>'+list.map((r,i)=>`<tr><td>#${esc(r.id)} ${esc(r.name)}${r.id===latest?.id?'（当前）':''}</td><td>${esc(r.comment)}</td><td>${esc(r.dataChangeCreatedBy)}<br>${esc(formatTime(r.dataChangeCreatedTime))}</td><td><button data-release="${i}">配置详情</button> ${S.modern&&r.id!==latest?.id?`<button data-rollback="${i}">回滚到此版本</button>`:''}</td></tr>`).join('')+'</table>':'<div class="empty">暂无生效发布</div>';
+ document.querySelectorAll('[data-release]').forEach(b=>b.onclick=action(()=>releaseDetails(list[+b.dataset.release])));
+ document.querySelectorAll('[data-rollback]').forEach(b=>b.onclick=action(()=>rollbackModal(list[+b.dataset.rollback].id))); updateButtons();
+}
+async function rollbackModal(toReleaseId=null){
+ const target=scope(),latest=await call('apollo/release.latest',target); if(!current(target)) return; if(!latest) throw new Error('当前没有可回滚的生效发布'); if(toReleaseId===latest.id) throw new Error('目标已经是当前版本');
+ confirmAction('回滚发布',`撤销当前生效发布 <b>#${esc(latest.id)}</b>${toReleaseId?'，切换至 <b>#'+esc(toReleaseId)+'</b>':'，恢复上一个有效版本'}。草稿不会因此自动发布。`,()=>call('apollo/release.rollback',{...target,releaseId:latest.id,...(toReleaseId!=null?{toReleaseId}:{})}),'回滚');
+}
+const split = text => [...new Set(text.split(',').map(s=>s.trim()).filter(Boolean))];
+function addRule(rule={}){
+ const row=document.createElement('div'); row.className='rule'; row.innerHTML=`<label>客户端 AppId（可用 *）</label><input type="text" data-f="clientAppId" value="${esc(rule.clientAppId||'')}"><label>IP（逗号分隔，可用 *）</label><input type="text" data-f="clientIpList" value="${esc((rule.clientIpList||[]).join(','))}"><label>Label（逗号分隔）</label><input type="text" data-f="clientLabelList" value="${esc((rule.clientLabelList||[]).join(','))}"><button class="danger">移除此规则</button>`; row.querySelector('button').onclick=()=>row.remove(); $('#ruleRows').appendChild(row);
+}
+async function loadGray(target,ticket){
+ const branch=await call('apollo/branch.get',target); if(!active(ticket)) return;
+ if(!branch?.exists){ S.branch=null; $('#grayBody').innerHTML='<div class="empty">当前没有灰度版本<br><br><button id="btnBranchNew">创建灰度版本</button></div>'; bind('#btnBranchNew',async()=>{ await call('apollo/branch.create',target); toast('灰度分支已创建'); await loadActive(); }); return; }
+ const name=branch.branchName||branch.clusterName; const [items,rules]=await Promise.all([call('apollo/items.list',{...target,cluster:name}),call('apollo/branch.rules.get',{...target,branch:name})]); if(!active(ticket)) return; S.branch=name;
+ $('#grayBody').innerHTML=`<div class="toolbar"><b>灰度分支 ${esc(name)}</b><button id="btnGrayPub" class="primary">灰度发布</button><button id="btnMerge">合并并全量发布</button><button id="btnAbandon" class="danger">放弃灰度 / 删除分支</button></div><div class="card"><h3>灰度草稿</h3><button id="btnAddGray">${format()==='properties'?'新增配置':'编辑文本配置'}</button><table><tr><th>Key</th><th>Value</th><th>操作</th></tr>${(items||[]).map((it,i)=>`<tr><td class="key">${esc(it.key)}</td><td class="val">${esc(it.value)}</td><td><button data-gray-edit="${i}">编辑</button> <button data-gray-del="${i}" class="danger">删除</button></td></tr>`).join('')}</table></div><div class="card"><h3>灰度规则</h3><p class="muted">每条规则设置客户端 AppId，以及 IP 或 Label；全部 IP 使用 *。移除全部规则后保存可清空规则。</p><div id="ruleRows"></div><div class="toolbar"><button id="btnAddRule">添加规则</button><button class="primary" id="btnSaveRules">保存规则</button></div></div>`;
+ (rules?.ruleItems||[]).forEach(addRule); bind('#btnAddRule',()=>addRule());
+ bind('#btnSaveRules',async()=>{ const ruleItems=[...document.querySelectorAll('#ruleRows .rule')].map(row=>({clientAppId:row.querySelector('[data-f=clientAppId]').value.trim(),clientIpList:split(row.querySelector('[data-f=clientIpList]').value),clientLabelList:split(row.querySelector('[data-f=clientLabelList]').value)})); for(const r of ruleItems) if(!r.clientAppId||(!r.clientIpList.length&&!r.clientLabelList.length)) throw new Error('每条规则需填写客户端 AppId，以及至少一个 IP 或 Label'); await call('apollo/branch.rules.set',{...target,branch:name,rules:{ruleItems}}); toast('灰度规则已保存'); });
+ bind('#btnGrayPub',()=>publishModal(true)); bind('#btnMerge',()=>publishModal(true,true));
+ bind('#btnAbandon',()=>confirmAction('放弃灰度',`删除灰度分支 <b>${esc(name)}</b> 及其配置和灰度规则，灰度客户端恢复主版本配置。`,()=>call('apollo/branch.abandon',{...target,branch:name}),'删除分支'));
+ bind('#btnAddGray',()=>itemModal(format()==='properties'?null:(items||[]).find(i=>i.key==='content'),true));
+ document.querySelectorAll('[data-gray-edit]').forEach(b=>b.onclick=action(()=>itemModal(items[+b.dataset.grayEdit],true)));
+ document.querySelectorAll('[data-gray-del]').forEach(b=>b.onclick=action(()=>deleteItem(items[+b.dataset.grayDel].key,true)));
+}
+async function loadInstances(target,ticket){
+ if(!S.modern){ $('#instancesBody').innerHTML='<div class="empty">Apollo 1.x / 2.x 的 OpenAPI 不提供实例列表，请在 Portal 查看。</div>'; $('#btnInstNext').disabled=true; return; }
+ const res=await call('apollo/instances.list',{...target,instanceAppId:$('#instanceApp').value.trim(),page:S.instPage,size:20}); if(!active(ticket)) return; const list=Array.isArray(res)?res:res?.instances||res?.content||[];
+ $('#instPage').textContent=`第 ${S.instPage+1} 页`; $('#btnInstNext').disabled=list.length<20;
+ $('#instancesBody').innerHTML=list.length?'<table><tr><th>客户端 AppId</th><th>集群</th><th>IP</th><th>机房</th><th>详情</th></tr>'+list.map((r,i)=>`<tr><td>${esc(r.appId)}</td><td>${esc(r.clusterName)}</td><td>${esc(r.ip)}</td><td>${esc(r.dataCenter)}</td><td><button data-instance="${i}">查看</button></td></tr>`).join('')+'</table>':'<div class="empty">没有匹配实例</div>';
+ document.querySelectorAll('[data-instance]').forEach(b=>b.onclick=action(()=>{ const instance=list[+b.dataset.instance]; details('实例信息',instance,infoRows([['客户端应用',instance.appId],['客户端集群',instance.clusterName],['IP 地址',instance.ip],['机房',instance.dataCenter],['首次连接时间',formatTime(instance.dataChangeCreatedTime)]])+(instance.configs||[]).map(c=>'<h3>'+esc(c.release?.namespaceName||'关联配置')+'</h3>'+infoRows([['配置应用',c.release?.appId],['配置集群',c.release?.clusterName],['发布编号',c.release?.id],['发布标题',c.release?.name],['最近获取时间',formatTime(c.releaseDeliveryTime)],['最后上报时间',formatTime(c.dataChangeLastModifiedTime)]])+configTable(c.release?.configurations)).join('')); }));
+}
+$('#envSel').onchange=action(async()=>{ S.env=$('#envSel').value; S.cluster=''; S.namespace=''; await refreshNavigation(); });
+$('#appSel').onclick=()=>$('#appMenu').hidden?openAppPicker():closeAppPicker();
+$('#appSel').onkeydown=e=>{ if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); openAppPicker(); } };
+$('#appSearch').oninput=()=>filterApps();
+$('#appSearch').onkeydown=action(async e=>{
+ if(e.isComposing) return;
+ if(e.key==='Escape'){ e.preventDefault(); closeAppPicker(true); }
+ else if(e.key==='Tab'){ closeAppPicker(true); if(e.shiftKey) e.preventDefault(); }
+ else if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); appPicker.focused=Math.max(0,Math.min(appPicker.matches.length-1,appPicker.focused+(e.key==='ArrowDown'?1:-1))); renderAppRows(true); }
+ else if(e.key==='Enter'){ e.preventDefault(); await selectApp(appPicker.focused); }
+});
+$('#appOptions').onscroll=()=>renderAppRows();
+$('#appOptions').onmousedown=e=>{ if(e.target.closest('[data-app-index]')) e.preventDefault(); };
+$('#appOptions').onclick=action(async e=>{ const option=e.target.closest('[data-app-index]'); if(option) await selectApp(Number(option.dataset.appIndex)); });
+document.addEventListener('pointerdown',e=>{ if(!$('#appPicker').contains(e.target)) closeAppPicker(); });
+window.addEventListener('resize',()=>{ if(!$('#appMenu').hidden){ positionAppMenu(); renderAppRows(); } });
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=action(async()=>{ S.tab=b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('sel',x===b)); ['cfg','diff','hist','gray','instances'].forEach(t=>$('#tab-'+t).hidden=t!==S.tab); await loadActive(); }));
+$('#cfgSearch').oninput=renderItems;
+bind('#btnPortal',portalAccount); bind('#btnAppNew',()=>appModal(true)); bind('#btnApp',()=>appModal()); bind('#btnRefresh',()=>loadApps()); bind('#btnClusterNew',clusterNew); bind('#btnCluster',clusterModal);
+bind('#btnNamespaceNew',namespaceNew); bind('#btnNamespace',namespaceModal); bind('#btnAttach',attachModal); bind('#btnRepair',repairNamespaces);
+bind('#btnAdd',()=>itemModal()); bind('#btnPublish',()=>publishModal()); bind('#btnDiffPublish',()=>publishModal()); bind('#btnImport',importModal); bind('#btnExport',exportConfig);
+bind('#btnDiffReload',loadActive); bind('#btnHistReload',loadActive); bind('#btnRollback',()=>rollbackModal());
+bind('#btnHistPrev',async()=>{ S.histPage--; await loadActive(); }); bind('#btnHistNext',async()=>{ S.histPage++; await loadActive(); });
+bind('#btnInstances',async()=>{ S.instPage=0; await loadActive(); }); bind('#btnInstPrev',async()=>{ S.instPage--; await loadActive(); }); bind('#btnInstNext',async()=>{ S.instPage++; await loadActive(); });
+init().catch(e=>{ S.loading=false; updateButtons(); showError(e); });
+</script>
+</body>
+</html>

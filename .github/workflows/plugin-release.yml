@@ -1,0 +1,41 @@
+name: Release DBX plugin
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: t8y2/dbx/.github/workflows/plugin-release-reusable.yml@4a42a2bd295185b026144f50052421795447e47c # plugin-cli-v0.1.9
+    with:
+      release-tag: ${{ github.event.release.tag_name || github.ref_name }}
+      package-command: |
+        version=$(node -p "require('./manifest.json').version")
+        test "$GITHUB_REF_NAME" = "v$version"
+        base="io.dbx.apollo-${version}-${DBX_PLUGIN_TARGET}"
+        artifact="${base}-${GITHUB_SHA:0:12}"
+        dbx-plugin package . --artifact-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${artifact}.dbxp"
+        mv "dist/${base}.dbxp" "dist/${artifact}.dbxp"
+        mv "dist/${base}.artifact.json" "dist/${artifact}.artifact.json"
+      package-path: dist/*.dbxp
+      metadata-path: dist/*.artifact.json
+      plugin-cli-version: 0.1.9
+
+  metadata:
+    needs: release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dbx-plugin-*
+          path: release-assets
+          merge-multiple: true
+      - name: Upload individual artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: gh release upload "$RELEASE_TAG" release-assets/*.artifact.json --repo "$GITHUB_REPOSITORY"

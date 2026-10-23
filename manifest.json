@@ -210,7 +210,7 @@
       ],
       "icon": "assets/plugin.svg",
       "id": "io.dbx.apollo.connection",
-      "label": "Apollo Workbench connection",
+      "label": "Apollo Release Workbench connection",
       "type": "connection-provider",
       "workbench": "io.dbx.apollo.workbench"
     },
@@ -218,11 +218,11 @@
       "description": "Browse and manage Apollo configurations.",
       "icon": "assets/plugin.svg",
       "id": "io.dbx.apollo.workbench",
-      "label": "Apollo Config Workbench",
+      "label": "Apollo Release Workbench",
       "type": "workbench"
     }
   ],
-  "description": "Manage Apollo apps, clusters, namespaces, configs, releases and gray releases",
+  "description": "Manage Apollo configurations and gray releases with selectable 1.x/2.x or 3.x API modes and Token, password or existing SSO Cookie authentication.",
   "engines": {
     "dbx": ">=0.6.47",
     "host_api": "1"
@@ -309,19 +309,19 @@
               "label": "更多选项"
             }
           },
-          "label": "Apollo 工作台连接"
+          "label": "Apollo 发布工作台连接"
         },
         "io.dbx.apollo.workbench": {
           "description": "浏览并管理 Apollo 配置。",
-          "label": "Apollo 配置工作台"
+          "label": "Apollo 发布工作台"
         }
       },
-      "description": "管理 Apollo 应用、集群、命名空间、配置、发布和灰度",
-      "name": "Apollo 配置工作台"
+      "description": "管理 Apollo 配置与灰度发布，可选择 1.x/2.x 或 3.x 接口模式，以及 Token、账号密码或已有 SSO Cookie 认证方式。",
+      "name": "Apollo 发布工作台"
     }
   },
   "manifest_version": 1,
-  "name": "Apollo Config Workbench",
+  "name": "Apollo Release Workbench",
   "publisher": "zzhao5726",
   "permissions": [],
   "version": "1.0.0",

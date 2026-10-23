@@ -1,12 +1,26 @@
-# Apollo Config Workbench — DBX 插件
+# Apollo Release Workbench — DBX 插件
 
-在 DBX 中管理 Apollo 应用、集群、命名空间、配置和发布。当前版本 **1.0.0**，需要 DBX **0.6.47+**。
+Apollo 发布工作台，在 DBX 中管理 Apollo 应用、集群、命名空间、配置和发布，需要 DBX **0.6.47+**。
+
+本分支仅准备下一正常版本的名称和文案，尚未发布。当前已签名版本仍为 **Apollo Config Workbench / Apollo 配置工作台 1.0.0**，插件 ID 始终为 `io.dbx.apollo`。Manifest 版本暂不调整；新版本发布前再统一递增，不重发或覆盖 1.0.0。
+
+## 产品定位
+
+### 中文
+
+以配置变更和发布操作为核心，提供配置编辑、导入预览、发布差异、灰度规则、全量合并及回滚。可手动选择 Apollo 1.x/2.x 或 3.x 接口模式，并使用开放平台 Token、3.x 用户访问 Token、账号密码或已有 SSO Cookie。可用操作取决于服务端版本、认证方式及权限；旧版管理写入和账号密码、LDAP、SSO 会话需在目标环境验证。SSO Cookie 仅复用已有会话，不包含完整的 SSO/OIDC 登录流程。
+
+### English
+
+A workbench focused on configuration changes and releases: edit configurations, preview imports and release differences, manage gray-release rules, merge to a full release, and roll back. Select the Apollo 1.x/2.x or 3.x API mode and use an Open Platform token, a 3.x user access token, username/password, or an existing SSO Cookie. Available operations depend on server version, authentication and permissions. Legacy management writes and password, LDAP and SSO sessions require target-environment validation. SSO Cookie authentication reuses an existing session; it does not provide a complete SSO/OIDC sign-in flow.
+
+具体兼容限制见下方功能矩阵；历史实测及未验收范围见 [验证记录](docs/VALIDATION.md)，不将源码实现或接口模式等同于全版本、全认证及五平台全部验收。
 
 ## 连接与安装
 
 连接目标为 **Apollo Portal**（通常是 8070），OpenAPI 不在 AdminService 上。
 
-1. 新建 DBX「Apollo 工作台连接」，填写 Portal 地址和端口。**无需填写环境**，连接后从 Apollo 返回的应用、环境列表选择。
+1. 新建 DBX「Apollo 发布工作台连接」，填写 Portal 地址和端口。**无需填写环境**，连接后从 Apollo 返回的应用、环境列表选择。
 2. 按「接口兼容度」明确选择 `1.x / 2.x` 或 `3.x`，不自动检测版本。
 3. 「登录方式」三选一：**Token、账号密码、SSO Cookie**。只显示并校验所选凭据；账号密码、Cookie 均无需 Token。
 4. Token 支持「开放平台授权管理」的第三方令牌，以及 3.x 个人菜单「访问 Token」中的用户令牌。用户令牌直接粘贴 `apollo_pat_...` 即可，也接受已带 `Bearer ` 的值。
@@ -20,7 +34,7 @@ dbx-plugin package .
 
 如需安装打包工具：`npm install --global @dbx-app/plugin-cli`。
 在 DBX 插件中心允许安装未签名的开发包，安装 `dist/` 中对应平台的 `.dbxp`。
-当前候选包见 [Release 下载清单](https://github.com/zzhao5726/dbx-apollo/releases/download/v1.0.0/release-candidates.json)，文件名包含源码提交前 12 位；Apple Silicon Mac 选择 `darwin-arm64` 包。
+已发布 1.0.0 的历史未签名候选包见 [Release 下载清单](https://github.com/zzhao5726/dbx-apollo/releases/download/v1.0.0/release-candidates.json)，不包含本分支文案变更；文件名包含源码提交前 12 位，Apple Silicon Mac 对应 `darwin-arm64` 包。正式签名版本通过 DBX 插件商店安装。
 
 正式发布与 DBX 官方商店上架步骤见 [发布指南](docs/RELEASING.md)。
 
